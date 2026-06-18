@@ -1,12 +1,12 @@
 [project]
 name = "terminal-whiteboard"
 version = "0.1.0"
-description = "Generate rough terminal-style whiteboard visuals for technical posts, docs, and explainers."
+description = "Generate rough terminal-style whiteboard visuals for technical posts, docs, explainers, and AI-agent workflows."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Kenny Trinh" }]
-keywords = ["diagram", "social", "whiteboard", "terminal", "visual"]
+keywords = ["diagram", "social", "whiteboard", "terminal", "visual", "ai-agent", "agent-tools"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",

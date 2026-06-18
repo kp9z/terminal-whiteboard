@@ -51,6 +51,22 @@ class VisualSpec:
 
 KENNY_PALETTE = Palette()
 
+TERMINAL_WHITEBOARD_SPEC = VisualSpec(
+    command="render-agent-visual",
+    title="Agents need visuals, not design chores",
+    subtitle="Turn structured ideas into terminal-whiteboard PNGs from a CLI.",
+    left_label="manual design",
+    left_title='"open a design tool"',
+    left_bullets=("slow iteration", "inconsistent style", "hard to automate"),
+    right_label="agent workflow",
+    right_nodes=("post idea", "visual spec", "renderer", "png output"),
+    arrow_label_top="+ structure",
+    arrow_label_bottom="- design drag",
+    takeaway="A good agent tool turns intent into a reusable artifact.",
+    watermark="terminal-whiteboard",
+    footer="# built by an agent, for agents",
+)
+
 TALK_TO_AGENTS_SPEC = VisualSpec(
     command="talk-to-your-agents",
     title="Typing makes your prompts too small",
@@ -267,6 +283,10 @@ def render_contrast(spec: VisualSpec, output: str, seed: int = 77, palette: Pale
     renderer.rough_rect((1460, 734, 1478, 768), fill=p.green, outline=p.green, width=1, radius=2, passes=1)
     renderer.text((124, 795), spec.footer, "tiny", (87, 96, 106))
     return renderer.save(output)
+
+
+def render_sample(output: str, seed: int = 77) -> str:
+    return render_contrast(TERMINAL_WHITEBOARD_SPEC, output, seed=seed)
 
 
 def render_talk_to_agents(output: str, seed: int = 77) -> str:

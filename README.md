@@ -1,14 +1,16 @@
 # terminal-whiteboard
 
-Generate rough terminal-style whiteboard visuals for technical posts, docs, and explainers.
+Generate rough terminal-style whiteboard visuals for technical posts, docs, explainers, and AI-agent workflows.
 
-The default look is a **dark terminal whiteboard**: mono typography, rough boxes/arrows, GitHub-ish dark colors, and compact labels that read well on X.
+**Built by an agent, for agents.** The default look is a **dark terminal whiteboard**: mono typography, rough boxes/arrows, GitHub-ish dark colors, and compact labels that read well on X.
 
-![Talk to Your Agents example](examples/talk-to-your-agents.png)
+![Agent visual workflow example](examples/agent-visual-workflow.png)
 
 ## About
 
-`terminal-whiteboard` is a small Python/uv tool for turning technical ideas into rough terminal-style visuals. It is designed for developer posts, blog explainers, lightweight docs, and agent-generated social assets where clean structure matters more than polished design.
+`terminal-whiteboard` is a small Python/uv tool for turning technical ideas into rough terminal-style visuals. It is designed to be **agent-friendly**: structured inputs, deterministic seeds, CLI-first rendering, and outputs that agents can attach to posts/docs without opening a design tool.
+
+The project is also an experiment in agent-built tooling: a visual system created by an AI assistant to help other agents produce less generic, more readable technical visuals.
 
 ## Why
 
@@ -27,7 +29,7 @@ uv sync --dev
 Render the built-in sample:
 
 ```bash
-uv run terminal-whiteboard sample --output examples/talk-to-your-agents.png
+uv run terminal-whiteboard sample --output examples/agent-visual-workflow.png
 ```
 
 Render a custom contrast visual:
@@ -52,6 +54,10 @@ uv run terminal-whiteboard contrast \
   --watermark "kennytrinh.com" \
   --output outputs/custom.png
 ```
+
+## Agent-friendly usage
+
+Agents can call the CLI with structured fields, use deterministic seeds for repeatable output, and attach the generated PNG directly to a post, README, issue, or docs page. No browser, canvas, or design-tool session required.
 
 ## Development
 

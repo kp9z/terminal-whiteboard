@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from terminal_whiteboard.renderer import TALK_TO_AGENTS_SPEC, VisualSpec, render_contrast
+from terminal_whiteboard.renderer import VisualSpec, render_contrast, render_sample
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -12,8 +12,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    sample = subparsers.add_parser("sample", help="Render the built-in Talk to Your Agents example.")
-    sample.add_argument("--output", "-o", default="examples/talk-to-your-agents.png")
+    sample = subparsers.add_parser("sample", help="Render the built-in repo/agent workflow example.")
+    sample.add_argument("--output", "-o", default="examples/agent-visual-workflow.png")
     sample.add_argument("--seed", type=int, default=77)
 
     contrast = subparsers.add_parser("contrast", help="Render a two-card contrast visual.")
@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "sample":
         output = Path(args.output)
-        render_contrast(TALK_TO_AGENTS_SPEC, str(output), seed=args.seed)
+        render_sample(str(output), seed=args.seed)
         print(output)
         return 0
 
