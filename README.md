@@ -6,6 +6,10 @@ The default look is a **dark terminal whiteboard**: mono typography, rough boxes
 
 ![Talk to Your Agents example](examples/talk-to-your-agents.png)
 
+## About
+
+`terminal-whiteboard` is a small Python/uv tool for turning technical ideas into rough terminal-style visuals. It is designed for developer posts, blog explainers, lightweight docs, and agent-generated social assets where clean structure matters more than polished design.
+
 ## Why
 
 Most AI-generated social visuals look glossy, generic, or illegible. `terminal-whiteboard` is meant for builder-native visuals that feel closer to a sketch in a terminal than a Canva template.
