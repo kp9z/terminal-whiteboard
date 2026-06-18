@@ -2,12 +2,16 @@ from pathlib import Path
 
 from terminal_whiteboard.renderer import (
     DIALOG_ONLY_SPEC,
+    IN_BODY_FLOW_SPEC,
     TERMINAL_WHITEBOARD_SPEC,
     DialogSpec,
+    InBodyFlowSpec,
     VisualSpec,
     render_contrast,
     render_dialog_only,
     render_dialog_sample,
+    render_in_body_flow,
+    render_in_body_flow_sample,
     render_sample,
 )
 
@@ -45,6 +49,29 @@ def test_contrast_render_creates_png(tmp_path: Path) -> None:
 def test_dialog_sample_render_creates_png(tmp_path: Path) -> None:
     output = tmp_path / "dialog-sample.png"
     assert render_dialog_sample(str(output), seed=3) == str(output)
+    assert_png(output)
+
+
+def test_in_body_flow_sample_render_creates_png(tmp_path: Path) -> None:
+    output = tmp_path / "in-body-flow-sample.png"
+    assert render_in_body_flow_sample(str(output), seed=5) == str(output)
+    assert_png(output)
+
+
+def test_in_body_flow_render_creates_png(tmp_path: Path) -> None:
+    output = tmp_path / "in-body-flow.png"
+    spec = InBodyFlowSpec(
+        title="Two different flows",
+        subtitle="The artifact matters less than preserving the thought.",
+        left_label="content flow",
+        left_steps=("idea", "draft", "edit", "publish"),
+        right_label="interview flow",
+        right_steps=("thought", "conversation", "framework", "artifact"),
+        center_badge_top="less writing tax",
+        center_badge_bottom="more context kept",
+        takeaway="value = less thought lost",
+    )
+    assert render_in_body_flow(spec, str(output), seed=6) == str(output)
     assert_png(output)
 
 
@@ -89,3 +116,4 @@ def test_dialog_render_fails_when_text_cannot_fit(tmp_path: Path) -> None:
 def test_builtin_specs_have_generic_watermark() -> None:
     assert TERMINAL_WHITEBOARD_SPEC.watermark == "terminal-whiteboard"
     assert DIALOG_ONLY_SPEC.watermark == "terminal-whiteboard"
+    assert IN_BODY_FLOW_SPEC.watermark == "terminal-whiteboard"

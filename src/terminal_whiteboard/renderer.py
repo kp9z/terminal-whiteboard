@@ -71,6 +71,28 @@ class DialogSpec:
     watermark: str = "terminal-whiteboard"
 
 
+@dataclass(frozen=True)
+class InBodyFlowSpec:
+    """Content for a cleaner in-body article diagram.
+
+    Unlike social/hero templates, this layout avoids terminal chrome and heavy
+    poster titles. It keeps the rough terminal-whiteboard vibe but uses more
+    whitespace so the diagram supports surrounding prose instead of competing
+    with it.
+    """
+
+    title: str
+    subtitle: str
+    left_label: str
+    left_steps: tuple[str, ...]
+    right_label: str
+    right_steps: tuple[str, ...]
+    center_badge_top: str
+    center_badge_bottom: str
+    takeaway: str
+    watermark: str = "terminal-whiteboard"
+
+
 DEFAULT_PALETTE = Palette()
 
 TERMINAL_WHITEBOARD_SPEC = VisualSpec(
@@ -100,6 +122,18 @@ DIALOG_ONLY_SPEC = DialogSpec(
     right_lines=("access", "memory", "judgment"),
     takeaway_top="Not a leaderboard problem.",
     takeaway_bottom="A system design problem.",
+)
+
+IN_BODY_FLOW_SPEC = InBodyFlowSpec(
+    title="Two different flows",
+    subtitle="the artifact matters less than preserving the thought",
+    left_label="content flow",
+    left_steps=("idea", "draft", "edit", "publish"),
+    right_label="interview flow",
+    right_steps=("thought", "conversation", "framework", "artifact"),
+    center_badge_top="less writing tax",
+    center_badge_bottom="more context kept",
+    takeaway="value = less thought lost",
 )
 
 
@@ -535,9 +569,107 @@ def render_dialog_only(spec: DialogSpec, output: str, seed: int = 77, palette: P
     return renderer.save(output)
 
 
+def render_in_body_flow(spec: InBodyFlowSpec, output: str, seed: int = 77, palette: Palette | None = None) -> str:
+    renderer = TerminalWhiteboardRenderer(seed=seed, palette=palette)
+    p = renderer.palette
+    renderer.add_background_texture()
+    renderer.rough_rect((120, 80, 1480, 850), fill=p.surface, outline=p.border, width=2, radius=28, passes=2)
+
+    title_box = (170, 108, 1430, 185)
+    renderer.text_center_in_box(title_box, spec.title, renderer.fit_font(spec.title, title_box, 36, 22, pad=4), p.text)
+    subtitle_box = (170, 178, 1430, 230)
+    renderer.text_center_in_box(
+        subtitle_box,
+        spec.subtitle,
+        renderer.fit_font(spec.subtitle, subtitle_box, 24, 16, pad=4),
+        p.muted,
+    )
+
+    left_label_box = (230, 255, 660, 310)
+    right_label_box = (940, 255, 1370, 310)
+    renderer.text_center_in_box(
+        left_label_box,
+        spec.left_label,
+        renderer.fit_font(spec.left_label, left_label_box, 28, 18, pad=4),
+        p.muted,
+    )
+    renderer.text_center_in_box(
+        right_label_box,
+        spec.right_label,
+        renderer.fit_font(spec.right_label, right_label_box, 28, 18, pad=4),
+        p.blue,
+    )
+
+    step_w = 335
+    step_h = 72
+    start_y = 325
+    gap = 45
+    left_x = 275
+    right_x = 985
+    for index, step in enumerate(spec.left_steps[:4]):
+        y = start_y + index * (step_h + gap)
+        box = (left_x, y, left_x + step_w, y + step_h)
+        renderer.rough_rect(box, fill=p.card, outline=p.border, width=2, radius=16, passes=2)
+        renderer.text_center_in_box(box, step, renderer.fit_font(step, box, 31, 22), p.text if index < 3 else p.muted)
+        if index < min(len(spec.left_steps), 4) - 1:
+            renderer.arrow(
+                (left_x + step_w // 2, y + step_h + 12),
+                (left_x + step_w // 2, y + step_h + gap - 14),
+                color=p.border,
+                width=3,
+            )
+
+    for index, step in enumerate(spec.right_steps[:4]):
+        y = start_y + index * (step_h + gap)
+        box = (right_x, y, right_x + step_w, y + step_h)
+        color = p.blue if index < 2 else p.green
+        renderer.rough_rect(box, fill=p.card, outline=color, width=3, radius=16, passes=2)
+        renderer.text_center_in_box(box, step, renderer.fit_font(step, box, 31, 22), p.text)
+        if index < min(len(spec.right_steps), 4) - 1:
+            renderer.arrow(
+                (right_x + step_w // 2, y + step_h + 12),
+                (right_x + step_w // 2, y + step_h + gap - 14),
+                color=color,
+                width=3,
+            )
+
+    for box, text, color in (
+        ((670, 420, 930, 540), spec.center_badge_top, p.red),
+        ((670, 580, 930, 700), spec.center_badge_bottom, p.green),
+    ):
+        renderer.rough_rect(
+            box, fill=p.bg, outline=color if color == p.green else p.border, width=2, radius=18, passes=2
+        )
+        top, bottom = text.split(" ", 1) if " " in text else (text, "")
+        top_box = (box[0] + 20, box[1] + 18, box[2] - 20, box[1] + 60)
+        renderer.text_center_in_box(top_box, top, renderer.fit_font(top, top_box, 27, 18, pad=4), color)
+        if bottom:
+            bottom_box = (box[0] + 20, box[1] + 60, box[2] - 20, box[3] - 20)
+            renderer.text_center_in_box(
+                bottom_box,
+                bottom,
+                renderer.fit_font(bottom, bottom_box, 27, 18, pad=4),
+                color,
+            )
+
+    takeaway_box = (390, 785, 1210, 835)
+    renderer.text_center_in_box(
+        takeaway_box,
+        spec.takeaway,
+        renderer.fit_font(spec.takeaway, takeaway_box, 30, 20, pad=4),
+        p.green,
+    )
+    renderer.text((1280, 825), spec.watermark, "tiny", p.muted)
+    return renderer.save(output)
+
+
 def render_sample(output: str, seed: int = 77) -> str:
     return render_contrast(TERMINAL_WHITEBOARD_SPEC, output, seed=seed)
 
 
 def render_dialog_sample(output: str, seed: int = 77) -> str:
     return render_dialog_only(DIALOG_ONLY_SPEC, output, seed=seed)
+
+
+def render_in_body_flow_sample(output: str, seed: int = 77) -> str:
+    return render_in_body_flow(IN_BODY_FLOW_SPEC, output, seed=seed)

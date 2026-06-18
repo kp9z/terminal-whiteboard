@@ -80,6 +80,32 @@ uv run terminal-whiteboard dialog \
 
 The dialog renderer deliberately lets panels push to the canvas edges so the image is mostly dialog surfaces, not black background. It also measures text bounding boxes and raises an error instead of exporting text that overflows.
 
+Render a cleaner in-body article diagram:
+
+```bash
+uv run terminal-whiteboard in-body-flow-sample --output examples/in-body-flow.png
+
+uv run terminal-whiteboard in-body-flow \
+  --title "Two different flows" \
+  --subtitle "the artifact matters less than preserving the thought" \
+  --left-label "content flow" \
+  --left-step "idea" \
+  --left-step "draft" \
+  --left-step "edit" \
+  --left-step "publish" \
+  --right-label "interview flow" \
+  --right-step "thought" \
+  --right-step "conversation" \
+  --right-step "framework" \
+  --right-step "artifact" \
+  --center-badge-top "less writing tax" \
+  --center-badge-bottom "more context kept" \
+  --takeaway "value = less thought lost" \
+  --output outputs/in-body-flow.png
+```
+
+The in-body flow template is for diagrams embedded inside essays/docs. It keeps the rough terminal-whiteboard identity, but removes terminal chrome and poster-style headline weight so the image supports the surrounding prose instead of competing with it.
+
 ## Agent-friendly usage
 
 Agents can call the CLI with structured fields, use deterministic seeds for repeatable output, and attach the generated PNG directly to a post, README, issue, or docs page. No browser, canvas, or design-tool session required.
@@ -110,6 +136,7 @@ Early alpha. Current templates:
 
 - two-card contrast visual
 - dialog-only / panel-first visual
+- cleaner in-body flow diagram
 
 Planned templates:
 
