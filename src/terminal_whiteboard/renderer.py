@@ -6,7 +6,7 @@ import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 RGB = tuple[int, int, int]
 Point = tuple[float, float]
@@ -49,6 +49,28 @@ class VisualSpec:
     footer: str = "# terminal whiteboard v0.1"
 
 
+@dataclass(frozen=True)
+class DialogSpec:
+    """Content for a dialog-only contrast visual.
+
+    This layout is platform-portable: panels fill or slightly bleed past the
+    canvas edges so viewers mostly see dialog surfaces, not an empty dark
+    background. Keep important text inside crop-safe inner boxes.
+    """
+
+    title: str
+    subtitle: str
+    left_title: str
+    left_lines: tuple[str, ...]
+    center_title: str
+    center_subtitle: str
+    right_title: str
+    right_lines: tuple[str, ...]
+    takeaway_top: str
+    takeaway_bottom: str
+    watermark: str = "terminal-whiteboard"
+
+
 DEFAULT_PALETTE = Palette()
 
 TERMINAL_WHITEBOARD_SPEC = VisualSpec(
@@ -65,6 +87,19 @@ TERMINAL_WHITEBOARD_SPEC = VisualSpec(
     takeaway="A good agent tool turns intent into a reusable artifact.",
     watermark="terminal-whiteboard",
     footer="# built by an agent, for agents",
+)
+
+DIALOG_ONLY_SPEC = DialogSpec(
+    title="Smart model ≠ useful AI",
+    subtitle="Useful AI comes from the layer around it.",
+    left_title="MODEL ONLY",
+    left_lines=("clever demo", "forgets context"),
+    center_title="MODEL",
+    center_subtitle="replaceable",
+    right_title="OPERATING LAYER",
+    right_lines=("access", "memory", "judgment"),
+    takeaway_top="Not a leaderboard problem.",
+    takeaway_bottom="A system design problem.",
 )
 
 
@@ -88,9 +123,10 @@ class TerminalWhiteboardRenderer:
         self.palette = palette or DEFAULT_PALETTE
         self.image = Image.new("RGB", (width, height), self.palette.bg)
         self.draw = ImageDraw.Draw(self.image)
+        self.font_paths = self._load_font_paths()
         self.fonts = self._load_fonts()
 
-    def _load_fonts(self) -> dict[str, ImageFont.FreeTypeFont | ImageFont.ImageFont]:
+    def _load_font_paths(self) -> dict[str, str | None]:
         mono_candidates = (
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
             "/System/Library/Fonts/Menlo.ttc",
@@ -99,8 +135,21 @@ class TerminalWhiteboardRenderer:
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
             "/System/Library/Fonts/Menlo.ttc",
         )
-        mono = next((path for path in mono_candidates if os.path.exists(path)), None)
-        mono_bold = next((path for path in mono_bold_candidates if os.path.exists(path)), mono)
+        hand_candidates = (
+            os.path.expanduser("~/.fonts/kira/Caveat[wght].ttf"),
+            "/usr/share/fonts/truetype/google-fonts/Caveat-Regular.ttf",
+            "/System/Library/Fonts/Supplemental/MarkerFelt.ttc",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+        )
+        return {
+            "mono": next((path for path in mono_candidates if os.path.exists(path)), None),
+            "mono_bold": next((path for path in mono_bold_candidates if os.path.exists(path)), None),
+            "hand": next((path for path in hand_candidates if os.path.exists(path)), None),
+        }
+
+    def _load_fonts(self) -> dict[str, ImageFont.FreeTypeFont | ImageFont.ImageFont]:
+        mono = self.font_paths["mono"]
+        mono_bold = self.font_paths["mono_bold"] or mono
         if not mono or not mono_bold:
             fallback = ImageFont.load_default()
             return {name: fallback for name in ("title", "sub", "label", "body", "small", "tiny", "takeaway")}
@@ -172,6 +221,28 @@ class TerminalWhiteboardRenderer:
         for _ in range(passes):
             self.rough_line(points, outline, width, 1, 2.4)
 
+    def floating_rect(
+        self,
+        box: Box,
+        fill: RGB,
+        outline: RGB | None = None,
+        width: int = 3,
+        radius: int = 24,
+        shadow_offset: tuple[int, int] = (12, 16),
+    ) -> None:
+        """Draw a lifted rough card with a soft shadow."""
+
+        x0, y0, x1, y1 = box
+        shadow = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 0))
+        shadow_draw = ImageDraw.Draw(shadow)
+        dx, dy = shadow_offset
+        shadow_draw.rounded_rectangle([x0 + dx, y0 + dy, x1 + dx, y1 + dy], radius=radius, fill=(0, 0, 0, 120))
+        shadow = shadow.filter(ImageFilter.GaussianBlur(18))
+        self.image = Image.alpha_composite(self.image.convert("RGBA"), shadow).convert("RGB")
+        self.draw = ImageDraw.Draw(self.image)
+        self.rough_rect(box, fill=fill, outline=outline, width=width, radius=radius, passes=2)
+        self.rough_line([(x0 + 26, y0 + 10), (x1 - 26, y0 + 10)], fill=(38, 52, 66), width=2, passes=1, amp=0.7)
+
     def arrow(self, start: tuple[int, int], end: tuple[int, int], color: RGB | None = None, width: int = 4) -> None:
         color = color or self.palette.blue
         x0, y0 = start
@@ -195,6 +266,74 @@ class TerminalWhiteboardRenderer:
         font = self.fonts[font_name]
         bbox = self.draw.textbbox((0, 0), text, font=font)
         self.draw.text(((self.width - (bbox[2] - bbox[0])) / 2, y), text, font=font, fill=fill or self.palette.text)
+
+    def fit_font(
+        self,
+        text: str,
+        box: Box,
+        max_size: int,
+        min_size: int = 18,
+        *,
+        font_path: str | None = None,
+        pad: int = 16,
+    ) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+        """Return the largest font that fits text inside box.
+
+        Raises ValueError instead of silently overflowing. Agents can use this as
+        an automated text-fit guard before sharing generated assets.
+        """
+
+        x0, y0, x1, y1 = box
+        available_width = (x1 - x0) - 2 * pad
+        available_height = (y1 - y0) - 2 * pad
+        if available_width <= 0 or available_height <= 0:
+            raise ValueError(f"Box is too small for padding: box={box}, pad={pad}")
+
+        path = font_path or self.font_paths.get("mono")
+        for size in range(max_size, min_size - 1, -2):
+            font = ImageFont.truetype(path, size) if path else ImageFont.load_default()
+            bbox = self.draw.textbbox((0, 0), text, font=font)
+            width = bbox[2] - bbox[0]
+            height = bbox[3] - bbox[1]
+            if width <= available_width and height <= available_height:
+                return font
+        raise ValueError(f"Text does not fit: {text!r} in {box} with pad={pad}")
+
+    def text_center_in_box(
+        self,
+        box: Box,
+        text: str,
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+        fill: RGB | None = None,
+    ) -> None:
+        x0, y0, x1, y1 = box
+        bbox = self.draw.textbbox((0, 0), text, font=font)
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
+        self.draw.text(
+            ((x0 + x1 - width) / 2 - bbox[0], (y0 + y1 - height) / 2 - bbox[1]),
+            text,
+            font=font,
+            fill=fill or self.palette.text,
+        )
+
+    def text_left_in_box(
+        self,
+        box: Box,
+        text: str,
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+        fill: RGB | None = None,
+        pad: int = 0,
+    ) -> None:
+        x0, y0, _x1, y1 = box
+        bbox = self.draw.textbbox((0, 0), text, font=font)
+        height = bbox[3] - bbox[1]
+        self.draw.text(
+            (x0 + pad - bbox[0], y0 + (y1 - y0 - height) / 2 - bbox[1]),
+            text,
+            font=font,
+            fill=fill or self.palette.text,
+        )
 
     def terminal_chrome(self, title: str = "~/terminal-whiteboard", watermark: str = "terminal-whiteboard") -> None:
         p = self.palette
@@ -271,5 +410,97 @@ def render_contrast(spec: VisualSpec, output: str, seed: int = 77, palette: Pale
     return renderer.save(output)
 
 
+def render_dialog_only(spec: DialogSpec, output: str, seed: int = 77, palette: Palette | None = None) -> str:
+    renderer = TerminalWhiteboardRenderer(seed=seed, palette=palette)
+    p = renderer.palette
+    hand = renderer.font_paths["hand"]
+    renderer.image = Image.new("RGB", (renderer.width, renderer.height), (24, 34, 49))
+    renderer.draw = ImageDraw.Draw(renderer.image)
+
+    header_fill = (24, 34, 49)
+    left_fill = (35, 23, 27)
+    center_fill = (16, 32, 51)
+    right_fill = (16, 34, 25)
+    footer_fill = (23, 32, 43)
+
+    renderer.rough_rect((-8, -8, 1608, 270), fill=header_fill, outline=p.border, width=3, radius=30, passes=2)
+    renderer.draw.ellipse([42, 38, 61, 57], fill=p.red)
+    renderer.draw.ellipse([76, 38, 95, 57], fill=p.yellow)
+    renderer.draw.ellipse([110, 38, 129, 57], fill=p.green)
+    renderer.text((1350, 36), spec.watermark, "tiny", p.muted)
+
+    renderer.text_center_in_box(
+        (70, 88, 1530, 192),
+        spec.title,
+        renderer.fit_font(spec.title, (70, 88, 1530, 192), 96, 54, font_path=hand, pad=0),
+        p.white,
+    )
+    renderer.text_center_in_box(
+        (70, 185, 1530, 250),
+        spec.subtitle,
+        renderer.fit_font(spec.subtitle, (70, 185, 1530, 250), 48, 30, font_path=hand, pad=0),
+        p.muted,
+    )
+
+    renderer.floating_rect((-18, 300, 545, 690), fill=left_fill, outline=p.red, width=4, radius=34)
+    renderer.text_center_in_box(
+        (40, 335, 510, 455),
+        spec.left_title,
+        renderer.fit_font(spec.left_title, (40, 335, 510, 455), 68, 34, font_path=hand, pad=14),
+        p.red,
+    )
+    for line, box in zip(spec.left_lines[:2], ((55, 498, 500, 565), (55, 580, 500, 655)), strict=False):
+        renderer.text_center_in_box(box, line, renderer.fit_font(line, box, 52, 28, font_path=hand, pad=8), p.muted)
+
+    renderer.floating_rect((620, 388, 980, 600), fill=center_fill, outline=p.blue, width=4, radius=28)
+    renderer.text_center_in_box(
+        (655, 420, 945, 515),
+        spec.center_title,
+        renderer.fit_font(spec.center_title, (655, 420, 945, 515), 74, 38, font_path=hand, pad=10),
+        p.blue,
+    )
+    renderer.text_center_in_box(
+        (655, 515, 945, 582),
+        spec.center_subtitle,
+        renderer.fit_font(spec.center_subtitle, (655, 515, 945, 582), 44, 24, font_path=hand, pad=4),
+        p.muted,
+    )
+
+    renderer.floating_rect((1055, 282, 1618, 704), fill=right_fill, outline=p.green, width=4, radius=36)
+    renderer.text_center_in_box(
+        (1088, 320, 1568, 435),
+        spec.right_title,
+        renderer.fit_font(spec.right_title, (1088, 320, 1568, 435), 62, 38, font_path=hand, pad=20),
+        p.green,
+    )
+    for line, y in zip(spec.right_lines[:3], (486, 566, 646), strict=False):
+        renderer.draw.ellipse([1110, y + 16, 1129, y + 35], fill=p.blue)
+        box = (1162, y, 1560, y + 62)
+        renderer.text_left_in_box(box, line, renderer.fit_font(line, box, 54, 34, font_path=hand, pad=0), p.white)
+
+    renderer.arrow((548, 500), (616, 500), color=p.red, width=5)
+    renderer.arrow((984, 500), (1052, 500), color=p.green, width=6)
+
+    renderer.floating_rect((-8, 728, 1608, 908), fill=footer_fill, outline=p.border, width=3, radius=30)
+    renderer.text_center_in_box(
+        (80, 748, 1520, 815),
+        spec.takeaway_top,
+        renderer.fit_font(spec.takeaway_top, (80, 748, 1520, 815), 60, 38, font_path=hand, pad=0),
+        p.blue,
+    )
+    renderer.text_center_in_box(
+        (80, 810, 1520, 878),
+        spec.takeaway_bottom,
+        renderer.fit_font(spec.takeaway_bottom, (80, 810, 1520, 878), 60, 38, font_path=hand, pad=0),
+        p.green,
+    )
+
+    return renderer.save(output)
+
+
 def render_sample(output: str, seed: int = 77) -> str:
     return render_contrast(TERMINAL_WHITEBOARD_SPEC, output, seed=seed)
+
+
+def render_dialog_sample(output: str, seed: int = 77) -> str:
+    return render_dialog_only(DIALOG_ONLY_SPEC, output, seed=seed)

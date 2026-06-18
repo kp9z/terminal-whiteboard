@@ -56,6 +56,30 @@ uv run terminal-whiteboard contrast \
   --output outputs/custom.png
 ```
 
+Render a dialog-only / panel-first visual for platform-portable social posts:
+
+```bash
+uv run terminal-whiteboard dialog-sample --output examples/dialog-only-operating-layer.png
+
+uv run terminal-whiteboard dialog \
+  --title "Smart model ≠ useful AI" \
+  --subtitle "Useful AI comes from the layer around it." \
+  --left-title "MODEL ONLY" \
+  --left-line "clever demo" \
+  --left-line "forgets context" \
+  --center-title "MODEL" \
+  --center-subtitle "replaceable" \
+  --right-title "OPERATING LAYER" \
+  --right-line "access" \
+  --right-line "memory" \
+  --right-line "judgment" \
+  --takeaway-top "Not a leaderboard problem." \
+  --takeaway-bottom "A system design problem." \
+  --output outputs/dialog.png
+```
+
+The dialog renderer deliberately lets panels push to the canvas edges so the image is mostly dialog surfaces, not black background. It also measures text bounding boxes and raises an error instead of exporting text that overflows.
+
 ## Agent-friendly usage
 
 Agents can call the CLI with structured fields, use deterministic seeds for repeatable output, and attach the generated PNG directly to a post, README, issue, or docs page. No browser, canvas, or design-tool session required.
@@ -70,17 +94,23 @@ uv run terminal-whiteboard sample --output /tmp/talk-to-your-agents.png
 
 ## Design principles
 
-- dark terminal surface
-- mono-first typography
+- dark terminal surface or dialog-first panel surfaces
+- mono-first typography, with optional readable handwritten labels when available
 - rough hand-drawn shapes, not glossy AI art
 - blue/green accents, red only for negative marks
 - one idea per visual
 - short labels over paragraph text
+- automated text-fit checks before export
 - watermark is quiet, not logo-heavy
 
 ## Status
 
-Early alpha. The first template is a two-card contrast visual. Planned templates:
+Early alpha. Current templates:
+
+- two-card contrast visual
+- dialog-only / panel-first visual
+
+Planned templates:
 
 - flow diagrams
 - stacked frameworks
