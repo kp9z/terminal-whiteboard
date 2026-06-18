@@ -5,11 +5,14 @@ from pathlib import Path
 
 from terminal_whiteboard.renderer import (
     DialogSpec,
+    HookSpec,
     InBodyFlowSpec,
     VisualSpec,
     render_contrast,
     render_dialog_only,
     render_dialog_sample,
+    render_hook,
+    render_hook_sample,
     render_in_body_flow,
     render_in_body_flow_sample,
     render_sample,
@@ -39,6 +42,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     in_body_sample.add_argument("--output", "-o", default="examples/in-body-flow.png")
     in_body_sample.add_argument("--seed", type=int, default=77)
+
+    hook_sample = subparsers.add_parser("hook-sample", help="Render the built-in sparse X hook image example.")
+    hook_sample.add_argument("--output", "-o", default="examples/hook-image.png")
+    hook_sample.add_argument("--seed", type=int, default=77)
+
+    hook = subparsers.add_parser("hook", help="Render a sparse, tasteful X hook image.")
+    hook.add_argument("--phrase", required=True, help="1-5 words, <=32 chars.")
+    hook.add_argument("--label", default="agent interface note")
+    hook.add_argument("--watermark", default="terminal-whiteboard")
+    hook.add_argument("--output", "-o", default="outputs/hook.png")
+    hook.add_argument("--seed", type=int, default=77)
 
     in_body_flow = subparsers.add_parser(
         "in-body-flow",
@@ -110,6 +124,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "in-body-flow-sample":
         output = Path(args.output)
         render_in_body_flow_sample(str(output), seed=args.seed)
+        print(output)
+        return 0
+
+    if args.command == "hook-sample":
+        output = Path(args.output)
+        render_hook_sample(str(output), seed=args.seed)
+        print(output)
+        return 0
+
+    if args.command == "hook":
+        spec = HookSpec(phrase=args.phrase, label=args.label, watermark=args.watermark)
+        output = Path(args.output)
+        render_hook(spec, str(output), seed=args.seed)
         print(output)
         return 0
 

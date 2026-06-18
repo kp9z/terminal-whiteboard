@@ -93,6 +93,19 @@ class InBodyFlowSpec:
     watermark: str = "terminal-whiteboard"
 
 
+@dataclass(frozen=True)
+class HookSpec:
+    """Content for a sparse X hook image.
+
+    Hook images are not diagrams. They are scroll-stoppers: one short phrase,
+    a tiny contextual label, and a lot of whitespace.
+    """
+
+    phrase: str
+    label: str = "agent interface note"
+    watermark: str = "terminal-whiteboard"
+
+
 DEFAULT_PALETTE = Palette()
 
 TERMINAL_WHITEBOARD_SPEC = VisualSpec(
@@ -135,6 +148,7 @@ IN_BODY_FLOW_SPEC = InBodyFlowSpec(
     center_badge_bottom="more context kept",
     takeaway="value = less thought lost",
 )
+HOOK_SPEC = HookSpec(phrase="MESS IS SIGNAL", label="voice → agents")
 
 
 class TerminalWhiteboardRenderer:
@@ -663,6 +677,55 @@ def render_in_body_flow(spec: InBodyFlowSpec, output: str, seed: int = 77, palet
     return renderer.save(output)
 
 
+def render_hook(spec: HookSpec, output: str, seed: int = 77, palette: Palette | None = None) -> str:
+    if len(spec.phrase.split()) > 5 or len(spec.phrase) > 32:
+        raise ValueError("Hook phrase should be 1-5 words and <=32 characters")
+
+    renderer = TerminalWhiteboardRenderer(seed=seed, palette=palette)
+    p = renderer.palette
+    hand = renderer.font_paths["hand"]
+    paper = (246, 248, 250)
+    ink = (24, 30, 38)
+    muted = (86, 96, 106)
+    renderer.image = Image.new("RGB", (renderer.width, renderer.height), paper)
+    renderer.draw = ImageDraw.Draw(renderer.image)
+
+    # Subtle paper grain, not an attention-hungry texture.
+    pix = renderer.image.load()
+    if pix is None:
+        raise RuntimeError("Could not access image pixels for hook texture")
+    for _ in range(5_000):
+        x, y = renderer.random.randrange(renderer.width), renderer.random.randrange(renderer.height)
+        r, g, b = pix[x, y]
+        delta = renderer.random.choice([-3, -2, -1, 1, 2])
+        pix[x, y] = tuple(max(0, min(255, v + delta)) for v in (r, g, b))
+
+    card = (155, 115, 1445, 785)
+    renderer.rough_rect(card, fill=paper, outline=(197, 207, 216), width=5, radius=38, passes=2)
+
+    label_box = (220, 165, 720, 220)
+    renderer.rough_rect(label_box, fill=(235, 245, 255), outline=(160, 200, 245), width=2, radius=18, passes=2)
+    renderer.text_center_in_box(
+        label_box,
+        spec.label,
+        renderer.fit_font(spec.label, label_box, 30, 18, font_path=renderer.font_paths["mono"], pad=18),
+        (46, 91, 146),
+    )
+
+    phrase_box = (210, 255, 1390, 635)
+    renderer.text_center_in_box(
+        phrase_box,
+        spec.phrase,
+        renderer.fit_font(spec.phrase, phrase_box, 190, 82, font_path=hand, pad=8),
+        ink,
+    )
+
+    # Small rough underline/accent. Enough personality, not a full diagram.
+    renderer.rough_line([(430, 655), (1168, 650), (1210, 660)], fill=p.blue, width=9, passes=2, amp=4.0)
+    renderer.text((1120, 735), spec.watermark, "tiny", muted)
+    return renderer.save(output)
+
+
 def render_sample(output: str, seed: int = 77) -> str:
     return render_contrast(TERMINAL_WHITEBOARD_SPEC, output, seed=seed)
 
@@ -673,3 +736,7 @@ def render_dialog_sample(output: str, seed: int = 77) -> str:
 
 def render_in_body_flow_sample(output: str, seed: int = 77) -> str:
     return render_in_body_flow(IN_BODY_FLOW_SPEC, output, seed=seed)
+
+
+def render_hook_sample(output: str, seed: int = 77) -> str:
+    return render_hook(HOOK_SPEC, output, seed=seed)

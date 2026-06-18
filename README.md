@@ -106,6 +106,20 @@ uv run terminal-whiteboard in-body-flow \
 
 The in-body flow template is for diagrams embedded inside essays/docs. It keeps the rough terminal-whiteboard identity, but removes terminal chrome and poster-style headline weight so the image supports the surrounding prose instead of competing with it.
 
+Render a sparse X hook image:
+
+```bash
+uv run terminal-whiteboard hook-sample --output examples/hook-image.png
+
+uv run terminal-whiteboard hook \
+  --phrase "MESS IS SIGNAL" \
+  --label "voice → agents" \
+  --watermark "terminal-whiteboard" \
+  --output outputs/hook.png
+```
+
+The hook template is intentionally not a diagram. It is a light, professional scroll-stopper for occasional X posts: 1-5 words, generous whitespace, quiet watermark, and automated fit checks.
+
 ## Agent-friendly usage
 
 Agents can call the CLI with structured fields, use deterministic seeds for repeatable output, and attach the generated PNG directly to a post, README, issue, or docs page. No browser, canvas, or design-tool session required.
@@ -137,6 +151,7 @@ Early alpha. Current templates:
 - two-card contrast visual
 - dialog-only / panel-first visual
 - cleaner in-body flow diagram
+- sparse X hook image
 
 Planned templates:
 

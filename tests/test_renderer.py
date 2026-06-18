@@ -2,14 +2,18 @@ from pathlib import Path
 
 from terminal_whiteboard.renderer import (
     DIALOG_ONLY_SPEC,
+    HOOK_SPEC,
     IN_BODY_FLOW_SPEC,
     TERMINAL_WHITEBOARD_SPEC,
     DialogSpec,
+    HookSpec,
     InBodyFlowSpec,
     VisualSpec,
     render_contrast,
     render_dialog_only,
     render_dialog_sample,
+    render_hook,
+    render_hook_sample,
     render_in_body_flow,
     render_in_body_flow_sample,
     render_sample,
@@ -56,6 +60,23 @@ def test_in_body_flow_sample_render_creates_png(tmp_path: Path) -> None:
     output = tmp_path / "in-body-flow-sample.png"
     assert render_in_body_flow_sample(str(output), seed=5) == str(output)
     assert_png(output)
+
+
+def test_hook_sample_render_creates_png(tmp_path: Path) -> None:
+    output = tmp_path / "hook-sample.png"
+    assert render_hook_sample(str(output), seed=5) == str(output)
+    assert_png(output)
+
+
+def test_hook_render_rejects_overlong_phrases(tmp_path: Path) -> None:
+    output = tmp_path / "hook-too-long.png"
+    spec = HookSpec(phrase="THIS HOOK HAS TOO MANY WORDS TO BE TASTEFUL")
+    try:
+        render_hook(spec, str(output), seed=5)
+    except ValueError as exc:
+        assert "Hook phrase" in str(exc)
+    else:
+        raise AssertionError("Expected hook renderer to reject overlong phrase")
 
 
 def test_in_body_flow_render_creates_png(tmp_path: Path) -> None:
@@ -117,3 +138,4 @@ def test_builtin_specs_have_generic_watermark() -> None:
     assert TERMINAL_WHITEBOARD_SPEC.watermark == "terminal-whiteboard"
     assert DIALOG_ONLY_SPEC.watermark == "terminal-whiteboard"
     assert IN_BODY_FLOW_SPEC.watermark == "terminal-whiteboard"
+    assert HOOK_SPEC.watermark == "terminal-whiteboard"
