@@ -1,12 +1,10 @@
 from pathlib import Path
 
 from terminal_whiteboard.renderer import (
-    TALK_TO_AGENTS_SPEC,
     TERMINAL_WHITEBOARD_SPEC,
     VisualSpec,
     render_contrast,
     render_sample,
-    render_talk_to_agents,
 )
 
 
@@ -18,12 +16,6 @@ def assert_png(path: Path) -> None:
 def test_sample_render_creates_repo_focused_png(tmp_path: Path) -> None:
     output = tmp_path / "sample.png"
     assert render_sample(str(output), seed=1) == str(output)
-    assert_png(output)
-
-
-def test_talk_to_agents_render_still_available(tmp_path: Path) -> None:
-    output = tmp_path / "talk-to-agents.png"
-    assert render_talk_to_agents(str(output), seed=1) == str(output)
     assert_png(output)
 
 
@@ -46,6 +38,5 @@ def test_contrast_render_creates_png(tmp_path: Path) -> None:
     assert_png(output)
 
 
-def test_builtin_specs_have_expected_watermarks() -> None:
+def test_builtin_spec_has_generic_watermark() -> None:
     assert TERMINAL_WHITEBOARD_SPEC.watermark == "terminal-whiteboard"
-    assert TALK_TO_AGENTS_SPEC.watermark == "kennytrinh.com"

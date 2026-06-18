@@ -45,11 +45,11 @@ class VisualSpec:
     arrow_label_top: str
     arrow_label_bottom: str
     takeaway: str
-    watermark: str = "kennytrinh.com"
+    watermark: str = "terminal-whiteboard"
     footer: str = "# terminal whiteboard v0.1"
 
 
-KENNY_PALETTE = Palette()
+DEFAULT_PALETTE = Palette()
 
 TERMINAL_WHITEBOARD_SPEC = VisualSpec(
     command="render-agent-visual",
@@ -65,20 +65,6 @@ TERMINAL_WHITEBOARD_SPEC = VisualSpec(
     takeaway="A good agent tool turns intent into a reusable artifact.",
     watermark="terminal-whiteboard",
     footer="# built by an agent, for agents",
-)
-
-TALK_TO_AGENTS_SPEC = VisualSpec(
-    command="talk-to-your-agents",
-    title="Typing makes your prompts too small",
-    subtitle="Voice captures the messy context agents actually need.",
-    left_label="typed prompt",
-    left_title='"summarize this"',
-    left_bullets=("too compressed", "missing constraints", "missing tradeoffs"),
-    right_label="spoken context",
-    right_nodes=("what happened", "why it matters", "constraints", "tone + intent"),
-    arrow_label_top="+ signal",
-    arrow_label_bottom="- guessing",
-    takeaway="The best prompt is often the one you would never type.",
 )
 
 
@@ -99,7 +85,7 @@ class TerminalWhiteboardRenderer:
         self.width = width
         self.height = height
         self.random = random.Random(seed)
-        self.palette = palette or KENNY_PALETTE
+        self.palette = palette or DEFAULT_PALETTE
         self.image = Image.new("RGB", (width, height), self.palette.bg)
         self.draw = ImageDraw.Draw(self.image)
         self.fonts = self._load_fonts()
@@ -234,7 +220,7 @@ def render_contrast(spec: VisualSpec, output: str, seed: int = 77, palette: Pale
     renderer.add_background_texture()
     renderer.terminal_chrome(title="~/terminal-whiteboard/x-post", watermark=spec.watermark)
 
-    prompt = "~/kennytrinh $ " if spec.watermark == "kennytrinh.com" else "~/terminal $ "
+    prompt = "~/terminal $ "
     renderer.text((130, 150), prompt, "sub", p.green)
     prompt_width = d.textbbox((0, 0), prompt, font=fonts["sub"])[2]
     renderer.text((int(130 + prompt_width), 150), spec.command, "sub", p.blue)
@@ -287,7 +273,3 @@ def render_contrast(spec: VisualSpec, output: str, seed: int = 77, palette: Pale
 
 def render_sample(output: str, seed: int = 77) -> str:
     return render_contrast(TERMINAL_WHITEBOARD_SPEC, output, seed=seed)
-
-
-def render_talk_to_agents(output: str, seed: int = 77) -> str:
-    return render_contrast(TALK_TO_AGENTS_SPEC, output, seed=seed)

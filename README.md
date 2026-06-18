@@ -36,22 +36,23 @@ Render a custom contrast visual:
 
 ```bash
 uv run terminal-whiteboard contrast \
-  --title "Typing makes your prompts too small" \
-  --subtitle "Voice captures the messy context agents actually need." \
-  --left-label "typed prompt" \
-  --left-title '"summarize this"' \
-  --left-bullet "too compressed" \
-  --left-bullet "missing constraints" \
-  --left-bullet "missing tradeoffs" \
-  --right-label "spoken context" \
-  --right-node "what happened" \
-  --right-node "why it matters" \
-  --right-node "constraints" \
-  --right-node "tone + intent" \
-  --arrow-top "+ signal" \
-  --arrow-bottom "- guessing" \
-  --takeaway "The best prompt is often the one you would never type." \
-  --watermark "kennytrinh.com" \
+  --command-name "render-agent-visual" \
+  --title "Agents need visuals, not design chores" \
+  --subtitle "Turn structured ideas into terminal-whiteboard PNGs from a CLI." \
+  --left-label "manual design" \
+  --left-title '"open a design tool"' \
+  --left-bullet "slow iteration" \
+  --left-bullet "inconsistent style" \
+  --left-bullet "hard to automate" \
+  --right-label "agent workflow" \
+  --right-node "post idea" \
+  --right-node "visual spec" \
+  --right-node "renderer" \
+  --right-node "png output" \
+  --arrow-top "+ structure" \
+  --arrow-bottom "- design drag" \
+  --takeaway "A good agent tool turns intent into a reusable artifact." \
+  --watermark "terminal-whiteboard" \
   --output outputs/custom.png
 ```
 

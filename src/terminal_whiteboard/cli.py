@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     contrast.add_argument("--command-name", default="contrast")
     contrast.add_argument("--arrow-top", default="+ signal")
     contrast.add_argument("--arrow-bottom", default="- noise")
-    contrast.add_argument("--watermark", default="kennytrinh.com")
+    contrast.add_argument("--watermark", default="terminal-whiteboard")
     contrast.add_argument("--output", "-o", default="outputs/contrast.png")
     contrast.add_argument("--seed", type=int, default=77)
     return parser
