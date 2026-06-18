@@ -48,6 +48,22 @@ def test_dialog_sample_render_creates_png(tmp_path: Path) -> None:
     assert_png(output)
 
 
+def test_rough_rect_uses_intermediate_points_for_excalidraw_like_edges() -> None:
+    from terminal_whiteboard.renderer import TerminalWhiteboardRenderer
+
+    renderer = TerminalWhiteboardRenderer(seed=5)
+    calls: list[int] = []
+
+    def record_points(points, fill=None, width=3, passes=2, amp=2.0):  # noqa: ANN001, ANN202
+        calls.append(len(points))
+
+    renderer.rough_line = record_points  # type: ignore[method-assign]
+    renderer.rough_rect((10, 20, 310, 220), radius=24, passes=2)
+
+    assert calls
+    assert min(calls) > 20
+
+
 def test_dialog_render_fails_when_text_cannot_fit(tmp_path: Path) -> None:
     output = tmp_path / "dialog-too-long.png"
     spec = DialogSpec(

@@ -97,6 +97,7 @@ uv run terminal-whiteboard sample --output /tmp/talk-to-your-agents.png
 - dark terminal surface or dialog-first panel surfaces
 - mono-first typography, with optional readable handwritten labels when available
 - rough hand-drawn shapes, not glossy AI art
+- Excalidraw-style randomized edges: outlines are subdivided into many intermediate points before jitter, not just corner-jittered straight lines
 - blue/green accents, red only for negative marks
 - one idea per visual
 - short labels over paragraph text

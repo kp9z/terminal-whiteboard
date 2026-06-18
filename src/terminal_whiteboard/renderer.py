@@ -178,6 +178,53 @@ class TerminalWhiteboardRenderer:
     def _jitter(self, points: Sequence[Point], amp: float = 2.0) -> list[Point]:
         return [(x + self.random.uniform(-amp, amp), y + self.random.uniform(-amp, amp)) for x, y in points]
 
+    def _line_points(self, start: Point, end: Point, steps: int) -> list[Point]:
+        x0, y0 = start
+        x1, y1 = end
+        return [(x0 + (x1 - x0) * i / steps, y0 + (y1 - y0) * i / steps) for i in range(steps)]
+
+    def _arc_points(self, center: Point, radius: int, start_angle: float, end_angle: float, steps: int) -> list[Point]:
+        cx, cy = center
+        return [
+            (
+                cx + radius * math.cos(start_angle + (end_angle - start_angle) * i / steps),
+                cy + radius * math.sin(start_angle + (end_angle - start_angle) * i / steps),
+            )
+            for i in range(steps + 1)
+        ]
+
+    def _rough_rounded_rect_points(self, box: Box, radius: int) -> list[Point]:
+        """Return many points around a rounded rectangle outline.
+
+        Excalidraw-style roughness works because each edge has intermediate
+        points before jitter is applied. A rectangle with only corner points
+        still looks mechanically straight after jitter.
+        """
+
+        x0, y0, x1, y1 = box
+        radius = max(0, min(radius, (x1 - x0) // 2, (y1 - y0) // 2))
+        edge_steps = max(6, int(max(x1 - x0, y1 - y0) / 55))
+        arc_steps = max(4, int(radius / 8))
+        if radius == 0:
+            points = []
+            corners = ((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0))
+            for start, end in zip(corners, corners[1:], strict=False):
+                points.extend(self._line_points(start, end, edge_steps))
+            points.append((x0, y0))
+            return points
+
+        points: list[Point] = []
+        points.extend(self._line_points((x0 + radius, y0), (x1 - radius, y0), edge_steps))
+        points.extend(self._arc_points((x1 - radius, y0 + radius), radius, -math.pi / 2, 0, arc_steps))
+        points.extend(self._line_points((x1, y0 + radius), (x1, y1 - radius), edge_steps))
+        points.extend(self._arc_points((x1 - radius, y1 - radius), radius, 0, math.pi / 2, arc_steps))
+        points.extend(self._line_points((x1 - radius, y1), (x0 + radius, y1), edge_steps))
+        points.extend(self._arc_points((x0 + radius, y1 - radius), radius, math.pi / 2, math.pi, arc_steps))
+        points.extend(self._line_points((x0, y1 - radius), (x0, y0 + radius), edge_steps))
+        points.extend(self._arc_points((x0 + radius, y0 + radius), radius, math.pi, 3 * math.pi / 2, arc_steps))
+        points.append((x0 + radius, y0))
+        return points
+
     def rough_line(
         self,
         points: Sequence[Point],
@@ -207,19 +254,9 @@ class TerminalWhiteboardRenderer:
         outline = outline or self.palette.border
         if fill:
             self.draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=fill)
-        points = [
-            (x0 + radius, y0),
-            (x1 - radius, y0),
-            (x1, y0 + radius),
-            (x1, y1 - radius),
-            (x1 - radius, y1),
-            (x0 + radius, y1),
-            (x0, y1 - radius),
-            (x0, y0 + radius),
-            (x0 + radius, y0),
-        ]
+        points = self._rough_rounded_rect_points(box, radius)
         for _ in range(passes):
-            self.rough_line(points, outline, width, 1, 2.4)
+            self.rough_line(points, outline, width, 1, 2.6)
 
     def floating_rect(
         self,
